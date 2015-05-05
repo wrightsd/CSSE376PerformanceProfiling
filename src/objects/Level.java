@@ -50,6 +50,7 @@ public class Level {
 	public final int BARRIER_0 = 19;
 
 	// Level Field Variables.
+	private int[][] oldMap;
 	private int mapWidth; // The map array width.
 	private int mapHeight; // The map array height.
 	private int[][] map; // The map array. (height, width)
@@ -67,6 +68,8 @@ public class Level {
 																	// boxes.
 	private ArrayList<Gold> goldObjects; // The arraylist of Gold objects.
 	private HashMap<Integer, BufferedImage> images; // Hashmap of tile images.
+
+	private String fileName;
 
 	/**
 	 * Constructs a Level object with given tileSize that searches for a
@@ -86,6 +89,7 @@ public class Level {
 		this.images = new HashMap<Integer, BufferedImage>();
 
 		populateImages();
+		this.fileName = fileName;
 		populateMap(fileName, tileSize);
 
 	}
@@ -199,15 +203,18 @@ public class Level {
 	 *            the pixel size of a tile. 32 is perferable.
 	 */
 	BufferedImage img;
+
 	public void populateMap(String fileName, int tileSize) {
 		try {
 			String parser = " ";
 			String currentLine = null;
 			String[] currentLineValues = null;
-//			FileReader fileInput = new FileReader(fileName);
-//			BufferedReader imageReader = new BufferedReader(new FileReader(fileInput));
+			// FileReader fileInput = new FileReader(fileName);
+			// BufferedReader imageReader = new BufferedReader(new
+			// FileReader(fileInput));
 			InputStream fileInput = getClass().getResourceAsStream(fileName);
-			BufferedReader imageReader = new BufferedReader(new InputStreamReader(fileInput));
+			BufferedReader imageReader = new BufferedReader(
+					new InputStreamReader(fileInput));
 			this.mapWidth = Integer.parseInt(imageReader.readLine());
 			this.mapHeight = Integer.parseInt(imageReader.readLine());
 
@@ -227,7 +234,8 @@ public class Level {
 					this.map[c][r] = Integer.parseInt(currentLineValues[c]);
 				}
 			}
-			img = new BufferedImage(this.mapWidth*this.tileSize,this.mapHeight*this.tileSize,BufferedImage.TYPE_INT_RGB);
+			img = new BufferedImage(this.mapWidth * this.tileSize,
+					this.mapHeight * this.tileSize, BufferedImage.TYPE_INT_RGB);
 			imageReader.close();
 			generateBarrierCollisionBoxes();
 			generateRegularCollisionBoxes();
@@ -329,13 +337,38 @@ public class Level {
 	 */
 	public void draw(Graphics2D g2) {
 		int currentPosition;
-		// cache the tile background in an image so tiles don't need to be drawn again and again redundantly.
+		// cache the tile background in an image so tiles don't need to be drawn
+		// again and again redundantly.
 		Graphics2D g = img.createGraphics();
-		for (int r = 0; r < this.map.length; r++) {
-			for (int c = 0; c < this.map[r].length; c++) {
-				currentPosition = this.map[r][c];
-				drawTileImage(currentPosition, r, c, g);
+		if (this.oldMap != null) {
+			for (int r = 0; r < this.map.length; r++) {
+				for (int c = 0; c < this.map[r].length; c++) {
+					currentPosition = this.map[r][c];
+					int oldTileValue = this.oldMap[r][c];
+					if (oldTileValue != currentPosition) {
+						drawTileImage(currentPosition, r, c, g);
+						this.oldMap[r][c] = currentPosition;
+					}
+				}
 			}
+		}
+		if (this.oldMap == null) {
+			for (int r = 0; r < this.map.length; r++) {
+				for (int c = 0; c < this.map[r].length; c++) {
+					currentPosition = this.map[r][c];
+
+					drawTileImage(currentPosition, r, c, g);
+				}
+			}
+			this.oldMap = new int[this.mapHeight][this.mapWidth];
+
+			for (int r = 0; r < this.map.length; r++) {
+				for (int c = 0; c < this.map[r].length; c++) {
+					currentPosition = this.map[r][c];
+					this.oldMap[r][c] = currentPosition;
+				}
+			}
+
 		}
 		g.dispose();
 		// draw cached tiles
@@ -357,7 +390,8 @@ public class Level {
 	 *            the Graphics2D object to draw on.
 	 */
 	public void drawTileImage(int tileValue, int row, int col, Graphics2D g2) {
-		// FIXME: reduce the number of calls to the code below. When does drawImage really need to be called?
+		// FIXME: reduce the number of calls to the code below. When does
+		// drawImage really need to be called?
 		BufferedImage image = this.images.get(tileValue);
 		g2.drawImage(image, row * this.tileSize, col * this.tileSize, null);
 	}
